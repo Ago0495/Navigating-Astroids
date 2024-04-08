@@ -14,20 +14,20 @@
 		<script id="2dVertexShader" type="notjs">
 			attribute vec4 a_position;	
 			attribute vec3 vert_color;
-			varying vec3 fragColor;	
-			
+			varying vec3 fragColor;		
+
 			uniform vec3 transform;
 			uniform vec3 rotation;		
 			uniform vec3 scale;
-
+			
+			//This was added for camera move
 			uniform vec3 cameraLoc;
 			uniform vec3 cameraRotation;
 			uniform float n;
 			uniform float f;
 			uniform float r;
 			uniform float t;
-
-			
+		
 			vec4 PositionObject(vec4 pos)
 			{
 				mat4 translateM = mat4(1.0,0.0,0.0,0.0,
@@ -81,83 +81,88 @@
 				);
 
 				return rotateX * rotateY * rotateZ * pos;
-			}
+			}		
 
-			MoveCamera(vec4 pos)
+			vec4 MoveCamera(vec4 pos)
 			{
 				vec3 cw = cos(cameraRotation);
 				vec3 sw = sin(cameraRotation);
-
-				mat4 translateView = mat4 (
-					1, 0, 0, 0,
-					0, 1, 0, 0,
-					0, 0, -1, 0,
-					-1*cameraLoc.x, -1*cameraLoc.y, cameraLoc.z, 1
-				);
-
-				mat4 rotateYView = mat4 (
-					cw.y, 0, -1*sw.y, 0,
-					0, 1, 0, 0,
-					sw.y, 0, cw.y, 0,
-					0, 0, 0, 1
-				)
-
-				mat4 rotateXView = mat4 (
-					1, 0, 0, 0,
-					0, cw.x, sw.x, 0,
-					0, -1*sw.x, cw.x, 0,
-					0, 0, 0, 1
-				)
-
-				mat4 rotateZView = mat4 (
-					cw.z, sw.z, 0, 0,
-					-1*sw.z, cw.z, 0, 0,
-					0, 0, 1, 0,
-					0, 0, 0, 1
-				)
-
-				return rotateXView * rotateYView * rotateZView * translateView * pos
 				
+				mat4 translateView = mat4(
+							1.0,0.0,0.0,0.0,
+							0.0,1.0,0.0,0.0,
+							0.0,0.0,-1.0,0.0,
+							-1.0*cameraLoc.x,-1.0*cameraLoc.y,cameraLoc.z,1.0
+							);
+							
+				mat4 rotateYView = mat4(
+							cw.y,0.0,-1.0*sw.y,0.0,
+							0.0,1.0,0.0,0.0,
+							sw.y,0.0,cw.y,0.0,
+							0.0,0.0,0.0,1.0
+							);
+										
+				mat4 rotateXView = mat4(
+							1.0,	0.0,		0.0,	0.0,
+							0.0,	cw.x,		sw.x,	0.0,
+							0.0,	-1.0*sw.x, 	cw.x,	0.0,
+							0.0,	0.0,		0.0,	1.0
+									);
+				
+				mat4 rotateZView = mat4(
+							cw.z,		sw.z,		0.0,	0.0,
+							-1.0*sw.z, 	cw.z,		0.0,	0.0,
+							0.0,		0.0,		1.0,	0.0,
+							0.0,		0.0,		0.0,	1.0
+									);		
+				return rotateXView*rotateYView*rotateZView*translateView*pos;
 			}
-
-			vec4 ApplyProjection ()
+			
+			vec4 ApplyProjection(vec4 pos)
 			{
+			
 				mat4 ComplexPerspective = mat4(
-								n/r, 0.0,0.0,0.0,
-								0.0, n/t,0.0,0.0,
-								0.0,0.0,-1.0*(f+n)/(f-n),-1.0,
-								0.0,0.0,-2.0*f*n/(f-n),0.0
-								);
+					n/r, 0.0,0.0,0.0,
+					0.0, n/t,0.0,0.0,
+					0.0, 0.0, -1.0*(f+n)/(f-n), -1.0,
+					0.0, 0.0, -2.0*f*n/(f-n), 0.0
+					);
 											
 				mat4 ComplexOrtho = mat4(	
-							1.0/r,0.0,0.0,0.0,
-							0.0,1.0/t,0.0,0.0,	
-							0.0,0.0,1.0,0.0,
-							0.0,0.0,0.0,1.0	
-							);
+					1.0/r, 0.0, 0.0, 0.0,
+					0.0, 1.0/t, 0.0, 0.0,	
+					0.0, 0.0, 1.0, 0.0,
+					-1.0, 1.0, 0.0, 1.0	
+					);
 								
 				//Choose which projection you want here:  Perspective or Orthographic			
 				return ComplexPerspective*pos;
-			}
-
-			vec4 LookAt (vec3 F, vec3 U, vec3 pos)
+				//does not work
+				//return ComplexOrtho*pos;
+			}					
+			
+			//End of Camera Move			
+			
+			vec4 LookAt(vec3 F, vec3 U, vec4 pos)
 			{
 				//precision mediump float;
 				vec3 R = cross(F,U);
-				mat4 LookAt = mat4(R.x,R.y,R.z,0.0,
-									U.x,U.y,U.z,0.0,
-									F.x,F.y,F.z,0.0,
-									0.0,0.0,0.0,1.0);
+				mat4 LookAt = mat4(
+					R.x,R.y,R.z,0.0,
+					U.x,U.y,U.z,0.0,
+					F.x,F.y,F.z,0.0,
+					0.0,0.0,0.0,1.0
+				);
 						
 				return LookAt*pos;	
 			}
+			
 
 			void main()
 			{
 				fragColor = vert_color;
-				//gl_Position = PositionObject(RotateObject(ScaleObject(a_position)));
-				//gl_Position = PositionObject(RotateObject(a_position));
-				gl_Position = ApplyProjection(MoveCamera(PositionObject(RotateObject(ScaleObject(a_position)))))
+				//gl_Position=PositionObject(RotateObject(ScaleObject(a_position)));
+				gl_Position=ApplyProjection(MoveCamera(PositionObject(RotateObject(ScaleObject(a_position)))));
 			}		
 		</SCRIPT>
 		<script id="2dFragmentShader" type="notjs">
@@ -166,7 +171,6 @@
 			varying vec3 fragColor;
 			void main()
 			{
-				//gl_FragColor = vec4(0,0,1,1); //Between 0 and 1.
 				gl_FragColor = vec4(fragColor,1);
 			}
 		</script>
@@ -186,11 +190,28 @@
 					this.playerShots = 0;
 	
 					this.myWEBGL = new WebGL_Interface();
+
+					//Added for Camera move!
+					var camLoc  = gl.getUniformLocation(this.myWEBGL.program,'cameraLoc');
+					gl.uniform3fv(camLoc,new Float32Array([0,0,0]));
+					var worldLoc = gl.getUniformLocation(this.myWEBGL.program,'cameraRotation');
+					gl.uniform3fv(worldLoc,new Float32Array([0,0,0]));
+					
+					var tempLoc = gl.getUniformLocation(this.myWEBGL.program,'n');
+					gl.uniform1f(tempLoc,.1);
+					tempLoc = gl.getUniformLocation(this.myWEBGL.program,'f');
+					gl.uniform1f(tempLoc,500);
+					tempLoc = gl.getUniformLocation(this.myWEBGL.program,'r');
+					gl.uniform1f(tempLoc,.1);
+					tempLoc = gl.getUniformLocation(this.myWEBGL.program,'t');
+					gl.uniform1f(tempLoc,.1);
+
 					//this.myTriangle = [];
 					this.Keys = [];
 					this.KeyPress = [];
 					this.KeyLock = [];
 
+					this.CreateObject(0, Camera, [0,0,-1],[0,0,0])
 	
 					this.CreateObject(2, Player, [0,-0.5,0], [0,0,0])
 					// this.CreateObject(2, Spike, [0.5,0,0], [0,0,0])
@@ -212,12 +233,11 @@
 						this.CreateObject(1, Wall, [i,-1,0], [0,0,0])
 					}
 	
-					this.CreateObject(1, Wall, [0,0,0], [0,0,0])
-					// var randX = Math.random() * 1.6 - 0.8;
-					// var randY = Math.random() * 1.6 - 0.8;
+					this.CreateObject(0, Wall, [0,0,0], [0,0,0])
+					// // var randX = Math.random() * 1.6 - 0.8;
+					// // var randY = Math.random() * 1.6 - 0.8;
 					this.CreateObject(2, Coin, [0, 0.5, 0], [0,0,0])
-
-					this.CreateObject(0, Camera, [0,0,0], [0,0,0])
+					// this.CreateObject(0, Pyramid, [0, 0, 0], [0,0,0])
 	
 					this.StartAll();
 				}
@@ -436,24 +456,24 @@
 					this.vertexShaderSource = document.getElementById("2dVertexShader").text;
 					this.fragmentShaderSource = document.getElementById("2dFragmentShader").text;
 					this.vertexShader = this.createShader(gl.VERTEX_SHADER, this.vertexShaderSource);
-					this.fragmenShader = this.createShader(gl.FRAGMENT_SHADER, this.fragmentShaderSource);
+					this.fragmentShader = this.createShader(gl.FRAGMENT_SHADER, this.fragmentShaderSource);
 					//Link to program
-					this.program = this.createProgram(this.vertexShader,this.fragmenShader);
+					this.program = this.createProgram(this.vertexShader,this.fragmentShader);
 
-					//Added for Camera move!
-					var camLoc  = gl.getUniformLocation(this.program,'cameraLoc');
-					gl.uniform3fv(camLoc,new Float32Array([0,0,0]));
-					var worldLoc = gl.getUniformLocation(this.program,'cameraRotation');
-					gl.uniform3fv(worldLoc,new Float32Array([0,0,0]));
+					// //Added for Camera move!
+					// var camLoc  = gl.getUniformLocation(this.program,'cameraLoc');
+					// gl.uniform3fv(camLoc,new Float32Array([0,0,0]));
+					// var worldLoc = gl.getUniformLocation(this.program,'cameraRotation');
+					// gl.uniform3fv(worldLoc,new Float32Array([0,0,0]));
 					
-					var tempLoc = gl.getUniformLocation(this.program,'n');
-					gl.uniform1f(tempLoc,.1);
-					tempLoc = gl.getUniformLocation(this.program,'f');
-					gl.uniform1f(tempLoc,500);
-					tempLoc = gl.getUniformLocation(this.program,'r');
-					gl.uniform1f(tempLoc,.1);
-					tempLoc = gl.getUniformLocation(this.program,'t');
-					gl.uniform1f(tempLoc,.1);
+					// var tempLoc = gl.getUniformLocation(this.program,'n');
+					// gl.uniform1f(tempLoc,.1);
+					// tempLoc = gl.getUniformLocation(this.program,'f');
+					// gl.uniform1f(tempLoc,500);
+					// tempLoc = gl.getUniformLocation(this.program,'r');
+					// gl.uniform1f(tempLoc,.1);
+					// tempLoc = gl.getUniformLocation(this.program,'t');
+					// gl.uniform1f(tempLoc,.1);
 
 					//setup our viewport
 					gl.viewport(0,0, gl.canvas.width, gl.canvas.height);
@@ -591,7 +611,8 @@
 						} 
 						if(clear)
 						{
-						this.loc = tempP;
+							console.log(this.name + tempP)
+							this.loc = tempP;
 						}
 
 						for (var to in m.Trigger)
@@ -640,14 +661,15 @@
 				}
 			}
 
-						
 			//Added for moving the camera!
 			class Camera extends GameObject
 			{
-				constructor()	
+				constructor()
 				{
-					super();					
+					super();
+					this.name = "Camera"
 				}
+
 				Update()
 				{
 					this.velocity = [0,0,0]
@@ -655,17 +677,16 @@
 
 					if("A" in m.Keys && m.Keys["A"])
 					{
-						this.angVelocity[2] +=.02;		//euler angles x,y,z
+						this.angVelocity[1] -=.02;		//euler angles x,y,z
 					}
 					if("D" in m.Keys && m.Keys["D"])
 					{
-						this.angVelocity[2] -=.02;
+						this.angVelocity[1] +=.02;
 					}
 					this.transform.doRotations(this.rot);
 					var tempF = this.transform.forward;
 					if("W" in m.Keys && m.Keys["W"])
 					{
-						this.transform.doRotations(this.rot)
 						for(var i =0; i < 3; i ++)
 						{
 							this.velocity[i] += tempF[i]*.01; 
@@ -673,20 +694,20 @@
 					}
 					if("S" in m.Keys && m.Keys["S"])
 					{
-						this.transform.doRotations(this.rot)
 						for(var i =0; i < 3; i ++)
 						{
 							this.velocity[i] -= tempF[i]*.01; 
 						}
 					}
-					this.move()
+
+					this.Move()
 				}
 				Render(program)
 				{
-							var camLoc  = gl.getUniformLocation(program,'cameraLoc');
-							gl.uniform3fv(camLoc,new Float32Array(this.loc));
-							var worldLoc = gl.getUniformLocation(program,'cameraRotation');
-							gl.uniform3fv(worldLoc,new Float32Array(this.rot));
+					var camLoc  = gl.getUniformLocation(program,'cameraLoc');
+					gl.uniform3fv(camLoc,new Float32Array(this.loc));
+					var worldLoc = gl.getUniformLocation(program,'cameraRotation');
+					gl.uniform3fv(worldLoc,new Float32Array(this.rot));
 				}	
 			}
 
@@ -803,6 +824,8 @@
 					gl.uniform3fv(tranLoc,new Float32Array(this.loc));
 					var thetaLoc = gl.getUniformLocation(program,'rotation');
 					gl.uniform3fv(thetaLoc,new Float32Array(this.rot));
+					var scaleLoc = gl.getUniformLocation(program,'scale');
+					gl.uniform3fv(scaleLoc,new Float32Array(this.scale));
 					
 					
 					var primitiveType = gl.TRIANGLES;
@@ -983,6 +1006,8 @@
 					gl.uniform3fv(tranLoc,new Float32Array(this.loc));
 					var thetaLoc = gl.getUniformLocation(program,'rotation');
 					gl.uniform3fv(thetaLoc,new Float32Array(this.rot));
+					var scaleLoc = gl.getUniformLocation(program,'scale');
+					gl.uniform3fv(scaleLoc,new Float32Array(this.scale));
 					
 					
 					var primitiveType = gl.TRIANGLES;
@@ -1088,6 +1113,8 @@
 					gl.uniform3fv(tranLoc,new Float32Array(this.loc));
 					var thetaLoc = gl.getUniformLocation(program,'rotation');
 					gl.uniform3fv(thetaLoc,new Float32Array(this.rot));
+					var scaleLoc = gl.getUniformLocation(program,'scale');
+					gl.uniform3fv(scaleLoc,new Float32Array(this.scale));
 					
 					
 					var primitiveType = gl.TRIANGLE_STRIP;
@@ -1194,9 +1221,11 @@
 					gl.uniform3fv(tranLoc,new Float32Array(this.loc));
 					var thetaLoc = gl.getUniformLocation(program,'rotation');
 					gl.uniform3fv(thetaLoc,new Float32Array(this.rot));
+					var scaleLoc = gl.getUniformLocation(program,'scale');
+					gl.uniform3fv(scaleLoc,new Float32Array(this.scale));
 										
 					var radius = 0.05;
-					var verts = 20;
+					var verts = 10;
 					
 					gl.bindBuffer(gl.ARRAY_BUFFER, this.buffer);
 
@@ -1376,6 +1405,8 @@
 					gl.uniform3fv(tranLoc,new Float32Array(this.loc));
 					var thetaLoc = gl.getUniformLocation(program,'rotation');
 					gl.uniform3fv(thetaLoc,new Float32Array(this.rot));
+					var scaleLoc = gl.getUniformLocation(program,'scale');
+					gl.uniform3fv(scaleLoc,new Float32Array(this.scale));
 					
 					
 					var primitiveType = gl.TRIANGLES;
@@ -1417,6 +1448,83 @@
 
 				}
 			}
+						
+			class Pyramid extends GameObject
+			{
+				constructor()
+				{
+					super()
+					this.buffer=gl.createBuffer();
+					gl.bindBuffer(gl.ARRAY_BUFFER, this.buffer);
+					//Now we want to add color to our vertices information.
+					this.vertices =
+					[	
+						-.5,-.5,0,0,0,0,
+						.5,-.5,0,1,0,0,
+						0,.5,0,1,0,0,
+						
+						-.5,-.5,0,0,1,0,
+						0,0,-.5,0,1,0,
+						.5,-.5,0,0,1,0,
+						
+						0,0,-.5,0,0,1,
+						.5,-.5,0,0,0,1,
+						0,.5,0,0,0,1,
+						
+						0,.5,0,1,1,0,
+						0,0,-.5,1,1,0,
+						-.5,-.5,0,1,1,0
+					];
+					gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(this.vertices), gl.STATIC_DRAW);
+					// this.loc = [0.5,0.-2,0.0];
+					// this.rot = [0.0,0.0,0.0];
+					// this.scale = [.2,.2,.2];
+				}
+				Update()
+				{
+					this.angVelocity[0]=.01
+					// this.velocity[0] =.0001;
+					// this.velocity[1] =.0002;
+					this.Move()
+				}
+					
+				Render(program)
+				{	
+					//Position
+					gl.bindBuffer(gl.ARRAY_BUFFER, this.buffer);
+					var positionAttributeLocation = gl.getAttribLocation(program, "a_position");
+					var size = 3;          
+					var type = gl.FLOAT;   
+					var normalize = false; 
+					var stride = 6*Float32Array.BYTES_PER_ELEMENT;	
+					var offset = 0;        // start at the beginning of the buffer
+					gl.enableVertexAttribArray(positionAttributeLocation);
+					gl.vertexAttribPointer(positionAttributeLocation, size, type, normalize, stride, offset);
+
+					//Color
+					var colorAttributeLocation = gl.getAttribLocation(program,"vert_color");
+					size = 3;
+					type = gl.FLOAT;
+					normalize = false;
+					stride = 6*Float32Array.BYTES_PER_ELEMENT;	
+					offset = 3*Float32Array.BYTES_PER_ELEMENT;	
+					gl.enableVertexAttribArray(colorAttributeLocation);
+					gl.vertexAttribPointer(colorAttributeLocation, size, type, normalize, stride, offset);
+							
+					var tranLoc  = gl.getUniformLocation(program,'transform');
+					gl.uniform3fv(tranLoc,new Float32Array(this.loc));
+					var thetaLoc = gl.getUniformLocation(program,'rotation');
+					gl.uniform3fv(thetaLoc,new Float32Array(this.rot));
+					var scaleLoc = gl.getUniformLocation(program,'scale');
+					gl.uniform3fv(scaleLoc,new Float32Array(this.scale));
+
+
+					var primitiveType = gl.TRIANGLES;
+					offset = 0;
+					var count = 12;
+					gl.drawArrays(primitiveType, offset, count);
+				}
+			}
 			
 	</script>
 
@@ -1429,11 +1537,11 @@
                 <label id="coinCounter">Collect Coin to Begin</label>
             </form> 
             <form>
-                <label id="dartCounter"></label>
+                <label id="dartCounter">...</label>
             </form> 
         </div>
 		
-		<CANVAS id="myCanvas" width="780" height="780" style = "display: block; top: auto; left: 0px; right: 0px; margin: auto; border: 1px solid #000000; margin-top: 20px;">
+		<CANVAS id="myCanvas" width="720" height="720" style = "display: block; top: auto; left: 0px; right: 0px; margin: auto; border: 1px solid #000000; margin-top: 20px;">
 			Your browser does not support canvas.
 		</CANVAS>
 
